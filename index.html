@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wechat Query</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="full-screen" content="true">
+    <meta name="screen-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="360-fullscreen" content="true">
+    <style>
+        html, body {
+            -ms-touch-action: none;
+            background: #fff;
+            padding: 0;
+            border: 0;
+            margin: 0;
+            height: 100%;
+        }
+        #query {
+            padding: 0;
+            border: 0;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<canvas id='query'>This is a Canvas</canvas>
+<script>
+    var wid = document.documentElement.clientWidth,
+        hei = document.documentElement.clientHeight;
+    var cav = document.getElementsByTagName('canvas')[0];
+    cav.width = wid;
+    cav.height = hei;
+</script>
+<script type="text/javascript" src="./js/loading.js"></script>
+</body>
+</html>
