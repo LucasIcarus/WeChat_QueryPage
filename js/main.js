@@ -51,138 +51,158 @@ var Color = {
     rect: ''
 };
 
-var images = [],
-    init = [],
+var images = {
+    init: [],
+    img: []
+},
     result = {},
     load = 0,
     ctx = cav.getContext('2d');
 
-// 工具函数
 window.requestAnimFrame = function () {
     return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
         window.setTimeout(callback, 1000 / 60);
     };
 }();
 
-function drawRoundedRect(x, y, width, height, radius, context) {
+// 工具函数集合
+(function () {
+    var T = {
+        drawRoundedRect: function drawRoundedRect(x, y, width, height, radius, context) {
+            context.beginPath();
 
-    context.beginPath();
+            if (width > 0) {
+                context.moveTo(x + radius, y);
+            } else {
+                context.moveTo(x - radius, y);
+            }
 
-    if (width > 0) {
-        context.moveTo(x + radius, y);
-    } else {
-        context.moveTo(x - radius, y);
-    }
+            context.arcTo(x + width, y, x + width, y + height, radius);
+            context.arcTo(x + width, y + height, x, y + height, radius);
+            context.arcTo(x, y + height, x, y, radius);
 
-    context.arcTo(x + width, y, x + width, y + height, radius);
-    context.arcTo(x + width, y + height, x, y + height, radius);
-    context.arcTo(x, y + height, x, y, radius);
+            if (width > 0) {
+                context.arcTo(x, y, x + width, y, radius);
+            } else {
+                context.arcTo(x, y, x - width, y, radius);
+            }
 
-    if (width > 0) {
-        context.arcTo(x, y, x + width, y, radius);
-    } else {
-        context.arcTo(x, y, x - width, y, radius);
-    }
+            context.closePath();
+        },
+        fillRoundedRect: function fillRoundedRect(x, y, width, height) {
+            var style = arguments.length <= 4 || arguments[4] === undefined ? "#ffffff" : arguments[4];
+            var radius = arguments.length <= 5 || arguments[5] === undefined ? 5 : arguments[5];
+            var context = arguments.length <= 6 || arguments[6] === undefined ? ctx : arguments[6];
 
-    context.closePath();
-}
+            context.fillStyle = style;
+            this.drawRoundedRect(x, y, width, height, radius, context);
+            context.fill();
+        },
+        roundedRectDot: function roundedRectDot(x, y, width, height, rounded, color, radius, interval) {
+            var context = arguments.length <= 8 || arguments[8] === undefined ? ctx : arguments[8];
 
-function fillRoundedRect(x, y, width, height) {
-    var style = arguments.length <= 4 || arguments[4] === undefined ? "#ffffff" : arguments[4];
-    var radius = arguments.length <= 5 || arguments[5] === undefined ? 5 : arguments[5];
-    var context = arguments.length <= 6 || arguments[6] === undefined ? ctx : arguments[6];
+            var n = (width - 2 * rounded) % interval / 2,
+                m = (height - 2 * rounded) % interval / 2,
+                o = x + width - rounded,
+                p = x + width - radius,
+                q = y + height - radius,
+                r = y + height - rounded;
+            context.save();
+            context.beginPath();
+            context.fillStyle = color;
+            for (var i = n + x + rounded; i <= o; i += interval) {
+                context.moveTo(i - radius, y + radius);
+                context.arc(i, y + radius, radius, 0, 2 * Math.PI, false);
+            }
 
-    context.fillStyle = style;
-    drawRoundedRect(x, y, width, height, radius, context);
-    context.fill();
-}
+            for (var _i = n + x + rounded; _i <= o; _i += interval) {
+                context.moveTo(_i - radius, q);
+                context.arc(_i, q, radius, 0, 2 * Math.PI, false);
+            }
+            for (var _i2 = m + y + rounded; _i2 <= r; _i2 += interval) {
+                context.moveTo(x + radius, _i2 - radius);
+                context.arc(x + radius, _i2, radius, 0, Math.PI * 2, false);
+            }
+            for (var _i3 = m + y + rounded; _i3 <= r; _i3 += interval) {
+                context.moveTo(p, _i3 - radius);
+                context.arc(p, _i3, radius, 0, Math.PI * 2, false);
+            }
+            context.closePath();
+            context.fill();
+            context.restore();
+        },
+        rollback: function rollback(style) {
+            var context = arguments.length <= 1 || arguments[1] === undefined ? ctx : arguments[1];
 
-function roundedRectDot(x, y, width, height, rounded, color, radius, interval) {
-    var context = arguments.length <= 8 || arguments[8] === undefined ? ctx : arguments[8];
+            var r = X.H_3_100;
+            context.save();
+            context.fillStyle = style;
+            context.strokeStyle = style;
+            context.lineWidth = 4;
+            context.beginPath();
 
-    var n = (width - 2 * rounded) % interval / 2,
-        m = (height - 2 * rounded) % interval / 2,
-        o = x + width - rounded,
-        p = x + width - radius,
-        q = y + height - radius,
-        r = y + height - rounded;
-    context.save();
-    context.beginPath();
-    context.fillStyle = color;
-    for (var i = n + x + rounded; i <= o; i += interval) {
-        context.moveTo(i - radius, y + radius);
-        context.arc(i, y + radius, radius, 0, 2 * Math.PI, false);
-    }
+            context.moveTo(1.4 * r - 1, 2 * r + 1);
+            context.lineTo(2 * r, 1.6 * r);
+            context.moveTo(1.4 * r - 1, 2 * r - 1);
+            context.lineTo(2 * r, 2.4 * r);
+            context.moveTo(1.4 * r, 2 * r);
+            context.lineTo(2.6 * r, 2 * r);
 
-    for (var _i = n + x + rounded; _i <= o; _i += interval) {
-        context.moveTo(_i - radius, q);
-        context.arc(_i, q, radius, 0, 2 * Math.PI, false);
-    }
-    for (var _i2 = m + y + rounded; _i2 <= r; _i2 += interval) {
-        context.moveTo(x + radius, _i2 - radius);
-        context.arc(x + radius, _i2, radius, 0, Math.PI * 2, false);
-    }
-    for (var _i3 = m + y + rounded; _i3 <= r; _i3 += interval) {
-        context.moveTo(p, _i3 - radius);
-        context.arc(p, _i3, radius, 0, Math.PI * 2, false);
-    }
-    context.closePath();
-    context.fill();
-    context.restore();
-}
+            context.moveTo(3 * r, 2 * r);
+            context.arc(r * 2, r * 2, r, 0, 2 * Math.PI, false);
+            context.closePath();
+            context.stroke();
+            context.restore();
+        },
+        reset: function reset() {
+            var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-function rollback(style) {
-    var context = arguments.length <= 1 || arguments[1] === undefined ? ctx : arguments[1];
+            var _ref$x = _ref.x;
+            var x = _ref$x === undefined ? 0 : _ref$x;
+            var _ref$y = _ref.y;
+            var y = _ref$y === undefined ? 0 : _ref$y;
+            var _ref$width = _ref.width;
+            var width = _ref$width === undefined ? wid : _ref$width;
+            var _ref$height = _ref.height;
+            var height = _ref$height === undefined ? hei : _ref$height;
+            var _ref$img = _ref.img;
+            var img = _ref$img === undefined ? images.init[0] : _ref$img;
 
-    var r = X.H_3_100;
-    context.save();
-    context.fillStyle = style;
-    context.strokeStyle = style;
-    context.lineWidth = 4;
-    context.beginPath();
+            ctx.fillStyle = ctx.createPattern(img, 'repeat');
+            ctx.fillRect(x, y, width, height);
+        },
 
-    context.moveTo(1.4 * r - 1, 2 * r + 1);
-    context.lineTo(2 * r, 1.6 * r);
-    context.moveTo(1.4 * r - 1, 2 * r - 1);
-    context.lineTo(2 * r, 2.4 * r);
-    context.moveTo(1.4 * r, 2 * r);
-    context.lineTo(2.6 * r, 2 * r);
 
-    context.moveTo(3 * r, 2 * r);
-    context.arc(r * 2, r * 2, r, 0, 2 * Math.PI, false);
-    context.closePath();
-    context.stroke();
-    context.restore();
-}
+        ApplicationLogic: {
+            handleTouch: function handleTouch(event) {
+                event.preventDefault();
+                event.stopPropagation();
 
-function reset() {
-    var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+                this.dealTouch(event);
+            },
+            dealTouch: function dealTouch(event) {
+                var p = this.getTouchendPosition(event);
+                this.custom(p);
+            },
+            getTouchendPosition: function getTouchendPosition(event) {
 
-    var _ref$x = _ref.x;
-    var x = _ref$x === undefined ? 0 : _ref$x;
-    var _ref$y = _ref.y;
-    var y = _ref$y === undefined ? 0 : _ref$y;
-    var _ref$width = _ref.width;
-    var width = _ref$width === undefined ? wid : _ref$width;
-    var _ref$height = _ref.height;
-    var height = _ref$height === undefined ? hei : _ref$height;
-    var _ref$img = _ref.img;
-    var img = _ref$img === undefined ? init[0] : _ref$img;
+                var x = event.changedTouches[0].clientX;
+                var y = event.changedTouches[0].clientY;
 
-    ctx.fillStyle = ctx.createPattern(img, 'repeat');
-    ctx.fillRect(x, y, width, height);
-}
+                return { x: x, y: y };
+            },
+            custom: function custom(p) {},
+            unbind: function unbind(object) {
+                cav.removeEventListener('touchend', object.handler, false);
+            }
+        }
+    };
 
-function getTouchendPosition(event) {
-
-    var x = event.changedTouches[0].clientX;
-    var y = event.changedTouches[0].clientY;
-
-    return { x: x, y: y };
-}
+    window.T = T || window.T;
+})(window);
 
 // 初始化回调链
-function initialize(source, callback) {
+function init(source, callback) {
     var n = 3;
 
     var _iteratorNormalCompletion = true;
@@ -196,15 +216,17 @@ function initialize(source, callback) {
             var index = _step$value[0];
             var url = _step$value[1];
 
-            init[index] = new Image();
-            init[index].src = url;
-            init[index].onload = function () {
+            images.init[index] = new Image();
+            images.init[index].src = url;
+            images.init[index].onload = function () {
                 n--;
                 if (!n) {
-                    ctx.fillStyle = ctx.createPattern(init[0], 'repeat');
+                    ctx.fillStyle = ctx.createPattern(images.init[0], 'repeat');
                     ctx.fillRect(0, 0, wid, hei);
-                    ctx.drawImage(init[1], X.W_6 - 25, X.H_11_25 + 10);
-                    ctx.drawImage(init[2], X.W_5_6 - 50, X.H_11_25 + 10);
+                    ctx.drawImage(images.init[1], X.W_6 - 25, X.H_11_25 + 10);
+                    ctx.drawImage(images.init[2], X.W_5_6 - 50, X.H_11_25 + 10);
+
+                    //加载需要用到的所有图片
                     callback();
                 }
             };
@@ -225,9 +247,9 @@ function initialize(source, callback) {
     }
 }
 
-function loadImages(source, callback) {
+function loadImages(source) {
 
-    fillRoundedRect(X.W_6, X.H_2_5, X.W_2_3, X.H_25);
+    T.fillRoundedRect(X.W_6, X.H_2_5, X.W_2_3, X.H_25);
 
     var loaded = 0,
         num = source.length;
@@ -243,13 +265,15 @@ function loadImages(source, callback) {
             var index = _step2$value[0];
             var url = _step2$value[1];
 
-            images[index] = new Image();
-            images[index].src = url;
-            images[index].onload = function () {
+            images.img[index] = new Image();
+            images.img[index].src = url;
+            images.img[index].onload = function () {
                 loaded++;
                 load = (X.W_2_3 - 4) * loaded / num;
             };
         }
+
+        // 初始化loading条动画效果
     } catch (err) {
         _didIteratorError2 = true;
         _iteratorError2 = err;
@@ -265,68 +289,27 @@ function loadImages(source, callback) {
         }
     }
 
-    callback();
+    loading();
 }
 
-var ProgressBar = function () {
-    function ProgressBar() {
-        _classCallCheck(this, ProgressBar);
-
-        this.hue = 0;
-        this.width = 10;
-        this.loop = true;
+// loading条对象
+var bar = {
+    hue: 0,
+    width: 10,
+    loop: true,
+    draw: function draw() {
+        T.fillRoundedRect(X.W_6 + 2, X.H_2_5 + 2, this.width, X.H_25 - 4, 'hsla(' + this.hue + ',100%, 40%, 1)');
+        var grad = ctx.createLinearGradient(X.W_6 + 2, X.H_2_5 + 2, X.W_6 + X.W_2_3 - 4, X.H_2_5 + X.H_25 - 4);
+        grad.addColorStop(0, 'transparent');
+        grad.addColorStop(1, 'rgba(0,0,0,0.5)');
+        T.fillRoundedRect(X.W_6 + 2, X.H_2_5 + 2, this.width, X.H_25 - 4, grad);
     }
-
-    _createClass(ProgressBar, [{
-        key: 'draw',
-        value: function draw() {
-
-            fillRoundedRect(X.W_6 + 2, X.H_2_5 + 2, this.width, X.H_25 - 4, 'hsla(' + this.hue + ',100%, 40%, 1)');
-            var grad = ctx.createLinearGradient(X.W_6 + 2, X.H_2_5 + 2, X.W_6 + X.W_2_3 - 4, X.H_2_5 + X.H_25 - 4);
-            grad.addColorStop(0, 'transparent');
-            grad.addColorStop(1, 'rgba(0,0,0,0.5)');
-            fillRoundedRect(X.W_6 + 2, X.H_2_5 + 2, this.width, X.H_25 - 4, grad);
-        }
-    }]);
-
-    return ProgressBar;
-}();
-
-var Heart = function () {
-    function Heart() {
-        _classCallCheck(this, Heart);
-
-        this.size = 0;
-        this.loop = true;
-        this.state = 0;
-    }
-
-    _createClass(Heart, [{
-        key: 'draw',
-        value: function draw() {
-            ctx.save();
-            ctx.translate(0, X.H_7_10);
-            ctx.rotate(15 * Math.PI / 180);
-            ctx.drawImage(images[1], 0, 0, X.W_4 + this.size, X.W_4 + this.size);
-            ctx.restore();
-            ctx.save();
-            ctx.translate(X.W_15, X.H_45_64);
-            ctx.rotate(-20 * Math.PI / 180);
-            ctx.globalAlpha = 0.5;
-            ctx.drawImage(images[1], 0, 0, X.W_7 + this.size / 2, X.W_7 + this.size / 2);
-            ctx.globalAlpha = 1;
-            ctx.restore();
-        }
-    }]);
-
-    return Heart;
-}();
-
-var bar = new ProgressBar();
+};
 
 function loading() {
     bar.hue += 0.8;
 
+    // 动画完成(下载完成作为必要非充分条件)之后关闭动画循环，跳转到封面函数。
     if (bar.width >= X.W_2_3 - 4) {
         bar.loop = false;
         setTimeout(function () {
@@ -346,95 +329,105 @@ function loading() {
 
 function cover() {
 
-    var hea = new Heart();
+    // 类似bar的动画对象
+    var heart = {
+        size: 0,
+        loop: true,
+        state: 0,
+        draw: function draw() {
+            ctx.save();
+            ctx.translate(0, X.H_7_10);
+            ctx.rotate(15 * Math.PI / 180);
+            ctx.drawImage(images.img[1], 0, 0, X.W_4 + this.size, X.W_4 + this.size);
+            ctx.restore();
+            ctx.save();
+            ctx.translate(X.W_15, X.H_45_64);
+            ctx.rotate(-20 * Math.PI / 180);
+            ctx.globalAlpha = 0.5;
+            ctx.drawImage(images.img[1], 0, 0, X.W_7 + this.size / 2, X.W_7 + this.size / 2);
+            ctx.globalAlpha = 1;
+            ctx.restore();
+        }
+    };
 
-    function animloop() {
-        if (hea.loop) {
-            reset({ x: 0, y: X.H_11_16, width: X.W_4, height: X.H_5_16 });
-            if (hea.state == 0 && hea.size > 10) {
-                hea.state = 1;
+    function animation() {
+        if (heart.loop) {
+            T.reset({ x: 0, y: X.H_11_16, width: X.W_4, height: X.H_5_16 });
+
+            // 状态转换
+            if (heart.state == 0 && heart.size > 10) {
+                heart.state = 1;
             }
-            if (hea.state == 1 && hea.size <= 0) {
-                hea.state = 0;
+            if (heart.state == 1 && heart.size <= 0) {
+                heart.state = 0;
             }
-            if (hea.state == 1) {
-                hea.size -= 0.5;
-            } else if (hea.state == 0) {
-                hea.size += 0.5;
+
+            if (heart.state == 1) {
+                heart.size -= 0.5;
+            } else if (heart.state == 0) {
+                heart.size += 0.5;
             }
-            hea.draw();
-            requestAnimationFrame(animloop);
+            heart.draw();
+            requestAnimationFrame(animation);
         }
     }
 
     function coverHandler(event) {
         event.preventDefault();
-        hea.loop = false;
+        heart.loop = false;
+
+        // 点击后跳转第一页函数
         firstPage();
         cav.removeEventListener('touchend', coverHandler, false);
     }
 
-    reset();
-    ctx.drawImage(images[3], wid - X.H_200_371, 0, X.H_200_371, hei);
+    T.reset();
+    ctx.drawImage(images.img[3], wid - X.H_200_371, 0, X.H_200_371, hei);
     ctx.save();
     ctx.translate(0, hei / 30);
     ctx.rotate(-30 * Math.PI / 180);
-    ctx.drawImage(images[1], 0, 0, X.W_4, X.W_4);
+    ctx.drawImage(images.img[1], 0, 0, X.W_4, X.W_4);
     ctx.restore();
     ctx.save();
     ctx.translate(X.W_7_26, X.H_5_24);
     ctx.rotate(30 * Math.PI / 180);
     ctx.globalAlpha = 0.5;
-    ctx.drawImage(images[1], 0, 0, X.W_6, X.W_6);
+    ctx.drawImage(images.img[1], 0, 0, X.W_6, X.W_6);
     ctx.globalAlpha = 1;
     ctx.restore();
-    ctx.drawImage(images[2], 0, 0, X.W_5_12, X.H_7_10);
-    animloop();
+    ctx.drawImage(images.img[2], 0, 0, X.W_5_12, X.H_7_10);
+    animation();
 
     cav.addEventListener('touchend', coverHandler, false);
 }
 
-// 问卷选择页面。
+// 后续页面基类
 
-var QueryPage = function () {
-    function QueryPage(arr) {
-        var style = arguments.length <= 1 || arguments[1] === undefined ? [''] : arguments[1];
-        var source = arguments[2];
-        var gender = arguments.length <= 3 || arguments[3] === undefined ? 0 : arguments[3];
-        var decorate = arguments.length <= 4 || arguments[4] === undefined ? 'dot' : arguments[4];
-        var rollback = arguments.length <= 5 || arguments[5] === undefined ? true : arguments[5];
-        var statement = arguments.length <= 6 || arguments[6] === undefined ? false : arguments[6];
+var Page = function () {
+    function Page(arr) {
+        var gender = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
 
-        _classCallCheck(this, QueryPage);
+        _classCallCheck(this, Page);
 
         this.arr = arr;
-        this.style = style;
-        this.source = source;
         this.gender = gender;
-        this.decorate = decorate;
-        this.rollback = rollback;
-        this.statement = statement;
         this.option = null;
         this.context = ctx;
     }
 
-    _createClass(QueryPage, [{
+    _createClass(Page, [{
         key: 'draw',
         value: function draw(point) {
 
             if (!this.gender) {
-                reset();
-            } else {
-                reset({ img: images[0] });
-            }
-
-            // 绘制返回按钮
-            if (this.rollback) {
-                if (this.gender) {
-                    rollback(Color.maleBg);
-                } else {
-                    rollback(Color.femaleBg);
+                T.reset();
+                T.rollback(Color.femaleBg);
+                if (point && this.context.isPointInPath(point.x, point.y)) {
+                    this.option = -1;
                 }
+            } else {
+                T.reset({ img: images.img[0] });
+                T.rollback(Color.maleBg);
                 if (point && this.context.isPointInPath(point.x, point.y)) {
                     this.option = -1;
                 }
@@ -449,28 +442,21 @@ var QueryPage = function () {
                     var _step3$value = _slicedToArray(_step3.value, 2);
 
                     var index = _step3$value[0];
-                    var arg = _step3$value[1];
+                    var args = _step3$value[1];
 
 
-                    // 绘制基本选项框以及陈述框
-                    if (this.style.length != 1) {
-                        fillRoundedRect(arg.x, arg.y, arg.width, arg.height, this.style[index]);
-                    } else {
-                        fillRoundedRect(arg.x, arg.y, arg.width, arg.height, this.style[0]);
+                    T.fillRoundedRect(args.x, args.y, args.width, args.height, args.color);
+
+                    if (point && this.context.isPointInPath(point.x, point.y)) {
+                        this.option = index;
                     }
 
-                    // 利用重绘为选项框添编辑触摸击事件
-                    if (!this.statement || index > 0) {
-                        if (point && this.context.isPointInPath(point.x, point.y)) {
-                            this.option = index;
-                        }
+                    if (args.dot) {
+                        T.roundedRectDot(args.x, args.y, args.width, args.height, 5, Color.dot, 2, 6);
                     }
 
-                    // 选项框装饰
-                    if (this.decorate == 'dot') {
-                        roundedRectDot(arg.x, arg.y, arg.width, arg.height, 5, Color.dot, 2, 6);
-                    } else if (this.decorate = 'rect') {}
-                    this.context.drawImage(this.source[index], arg.x, arg.y, arg.width, arg.height);
+                    // 添加图片化文字
+                    this.context.drawImage(args.txt, args.x, args.y, args.width, args.height);
                 }
             } catch (err) {
                 _didIteratorError3 = true;
@@ -487,79 +473,109 @@ var QueryPage = function () {
                 }
             }
         }
+
+        // 通过工具对象隔离事件的应用逻辑
+
+    }, {
+        key: 'handler',
+        value: function handler(event) {
+            T.ApplicationLogic.handleTouch(event);
+        }
     }]);
 
-    return QueryPage;
+    return Page;
 }();
+
+// 页面函数
+
 
 function firstPage() {
 
-    function handler(event) {
-        event.preventDefault();
-        var p = getTouchendPosition(event);
+    var fir = new Page([{
+        x: X.W_10,
+        y: X.H_5_18,
+        width: X.W_4_5,
+        height: X.H_11_60,
+        color: Color.op1,
+        dot: true,
+        txt: images.img[4]
+    }, {
+        x: X.W_10,
+        y: X.H_2,
+        width: X.W_4_5,
+        height: X.H_11_60,
+        color: Color.op2,
+        dot: true,
+        txt: images.img[5]
+    }]);
+
+    fir.draw();
+
+    // 触摸事件针对不同页面的定制部分
+    T.ApplicationLogic.custom = function (p) {
         fir.draw(p);
+
         switch (fir.option) {
             case 1:
                 window.result.gender = 'female';
                 firstLadyPage();
-                cav.removeEventListener('touchend', handler, false);
                 break;
             case 0:
                 window.result.gender = 'male';
                 firstManPage();
-                cav.removeEventListener('touchend', handler, false);
                 break;
             case -1:
                 cover();
-                cav.removeEventListener('touchend', handler, false);
                 break;
             default:
                 fir.option = null;
         }
-    }
 
-    var fir = new QueryPage([{ x: X.W_10, y: X.H_5_18, width: X.W_4_5, height: X.H_11_60 }, { x: X.W_10, y: X.H_2, width: X.W_4_5, height: X.H_11_60 }], [Color.op1, Color.op2], [images[4], images[5]]);
+        this.unbind(fir);
+    };
 
-    fir.draw();
-
-    cav.addEventListener('touchend', handler, false);
+    cav.addEventListener('touchend', fir.handler, false);
 }
 
-function firstManPage() {
-
-    function handler(event) {
-        event.preventDefault();
-        var p = getTouchendPosition(event);
-        firMan.draw(p);
-
-        console.log(firMan.option);
-        // switch (firMan.option) {
-        //     case -1:
-        //         firstPage();
-        //         cav.removeEventListener('touchend', handler, false);
-        //         break;
-        //     case
-        // }
-    }
-
-    var firMan = new QueryPage([{ x: X.W_7_100, y: X.H_7_36, width: X.W_43_50, height: X.H_6 }, { x: X.W_7_100, y: X.H_4_9, width: X.W_43_50, height: X.H_7_90 }, { x: X.W_7_100, y: X.H_5_9, width: X.W_43_50, height: X.H_7_90 }, { x: X.W_7_100, y: X.H_24_36, width: X.W_43_50, height: X.H_7_90 }], ['#ffffff'], [images[6], images[7], images[8], images[9]], 1, 'dot', true, true);
-
-    firMan.draw();
-
-    cav.addEventListener('touchend', handler, false);
-};
-
-function firstLadyPage() {
-    reset();
-}
+// function firstManPage() {
+//
+//     function handler(event) {
+//         event.preventDefault();
+//         let p = getTouchendPosition(event);
+//         firMan.draw(p);
+//
+//         console.log(firMan.option);
+//         // switch (firMan.option) {
+//         //     case -1:
+//         //         firstPage();
+//         //         cav.removeEventListener('touchend', handler, false);
+//         //         break;
+//         //     case
+//         // }
+//     }
+//
+//     let firMan = new QueryPage([{x: X.W_7_100, y:X.H_7_36, width: X.W_43_50, height: X.H_6},
+//             {x: X.W_7_100, y:X.H_4_9, width: X.W_43_50, height: X.H_7_90},
+//             {x: X.W_7_100, y:X.H_5_9, width: X.W_43_50, height: X.H_7_90},
+//             {x: X.W_7_100, y:X.H_24_36, width: X.W_43_50, height: X.H_7_90}],
+//         ['#ffffff'], [images[6], images[7], images[8], images[9]], 1, 'dot', true, true);
+//
+//     firMan.draw();
+//
+//     cav.addEventListener('touchend', handler, false);
+// };
+//
+//
+//
+// function firstLadyPage() {
+//     reset();
+// }
 
 // 页面初始化
 window.onload = function () {
 
-    var source = ['./img/bg_1.png', './img/heart.png', './img/main-title.png', './img/oba.png', './img/1_1.png', './img/1_2.png', './img/m_1_1.png', './img/m_1_2.png', './img/m_1_3.png', './img/m_1_4.png'];
-    initialize(['./img/bg.jpg', './img/0.png', './img/100.png'], function () {
-        loadImages(source, function () {
-            loading();
-        });
+    var source = ['./img/bg_1.png', './img/heart.png', './img/main-title.png', './img/oba.png', './img/op1.png', './img/op2.png', './img/m_1_1.png', './img/m_1_2.png', './img/m_1_3.png', './img/m_1_4.png'];
+    init(['./img/bg.jpg', './img/0.png', './img/100.png'], function () {
+        loadImages(source);
     });
 };
