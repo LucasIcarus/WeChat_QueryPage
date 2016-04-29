@@ -41,6 +41,8 @@ const Color = {
     op1: '#7493C9',
     op2: '#F376A2',
     dot: '#E0F8A9',
+    white: '#ffffff',
+    stripe: '#fff79a',
     rect: ''
 };
 
@@ -48,7 +50,11 @@ let images = {
     init: [],
     img: []
     },
-    result = {},
+    result = {
+        gender: '',
+        options: [],
+        score: []
+    },
     load = 0,
     ctx = cav.getContext('2d');
 
@@ -66,6 +72,10 @@ window.requestAnimFrame = (function () {
 // 工具函数集合
 (function () {
     let T = {
+
+        randomSort(a, b) {
+            return Math.random() - 0.5;
+        },
         
         drawRoundedRect(x, y, width, height, radius, context) {
             context.beginPath();
@@ -90,9 +100,11 @@ window.requestAnimFrame = (function () {
         },
 
         fillRoundedRect(x, y, width, height, style = "#ffffff", radius = 5, context = ctx) {
+            context.save();
             context.fillStyle = style;
             this.drawRoundedRect(x, y, width, height, radius, context);
             context.fill();
+            context.restore();
         },
 
         roundedRectDot(x, y, width, height, rounded, color, radius, interval, context = ctx) {
@@ -127,12 +139,48 @@ window.requestAnimFrame = (function () {
             context.restore();
         },
 
+        roundedRectStripe(x, y, width, height, rounded, color = Color.stripe, thick = 5, context = ctx) {
+            if (9 * height > hei) {
+                
+                // 大框条纹长度
+                var l = Math.floor((height - 2 * rounded) / 8.5),
+                    
+                    // 纵向间隔
+                    m = (height - rounded * 2 - l * 6)/5;
+            } else {
+                
+                // 小框条纹长度
+                var l = Math.floor((height - 2 * rounded) / 4),
+                    m = (height - rounded * 2 - l * 3)/2;
+            }
+
+            // 横向前置余量
+            const n = ((width - rounded * 2) % (l * 1.5))/2;
+
+            context.save();
+            context.fillStyle = color;
+            
+            for (let i = y + rounded; i < y + height - rounded; i += (m + l) ) {
+                context.fillRect(x + 1, i, thick, l);
+                context.fillRect(x + width - thick - 1, i, thick, l);
+            }
+            
+            for (let i = x + rounded + n; i < x + width - rounded - n; i += 1.5 * l) {
+                context.fillRect(i, y + 1, l, thick);
+                context.fillRect(i, y + height - thick - 1, l, thick);
+            }
+            
+            
+            context.restore();
+            
+        },
+
         rollback(style, context = ctx) {
             let r = X.H_3_100;
             context.save();
             context.fillStyle = style;
             context.strokeStyle = style;
-            context.lineWidth = 4;
+            context.lineWidth = 5;
             context.beginPath();
 
             context.moveTo(1.4 * r - 1, 2 * r + 1);
@@ -149,37 +197,117 @@ window.requestAnimFrame = (function () {
             context.restore();
         },
 
-        reset({x = 0, y = 0, width = wid, height = hei, img = images.init[0]} = {}) {
-            ctx.fillStyle = ctx.createPattern(img, 'repeat');
-            ctx.fillRect(x, y, width, height);
+        reset({x = 0, y = 0, width = wid, height = hei, img = images.init[0]} = {}, context = ctx) {
+            context.save();
+            context.fillStyle = ctx.createPattern(img, 'repeat');
+            context.fillRect(x, y, width, height);
+            context.restore();
         },
-        
-        ApplicationLogic: {
+
+        getRandomOption(arr = [{}]) {
+            let r = [],
+                n = 0;
+
+            for (let [index, args] of arr.entries()) {
+                if (args.option.random) {
+                    r.push(arr[index].option);
+                }
+            }
+
+            if (r.length) {
+                r = r.sort(this.randomSort);
+            }
+
+            for (let [index, args] of arr.entries()) {
+                if (args.option.random) {
+                    arr[index].option = r[n];
+                    n++;
+                } 
+            }
+            
+            return arr;
+        },
+
+        getStandardArr(arr) {
+            return [
+                {
+                    x: X.W_7_100,
+                    y: X.H_7_36,
+                    width: X.W_43_50,
+                    height: X.H_6,
+                    color: Color.white,
+                    dot: false,
+                    stripe: true,
+                    option: {
+                        img: images.img[arr[0]],
+                        random: false
+                    }
+                },{
+                    x: X.W_7_100,
+                    y: X.H_4_9,
+                    width: X.W_43_50,
+                    height: X.H_7_90,
+                    color: Color.white,
+                    dot: false,
+                    stripe: true,
+                    option: {
+                        img: images.img[arr[1]],
+                        random: true,
+                        score: 1,
+                        mark: 'A'
+                    }
+                },{
+                    x: X.W_7_100,
+                    y: X.H_5_9,
+                    width: X.W_43_50,
+                    height: X.H_7_90,
+                    color: Color.white,
+                    dot: false,
+                    stripe: true,
+                    option: {
+                        img: images.img[arr[2]],
+                        random: true,
+                        score: 2,
+                        mark: 'B'
+                    }
+                },{
+                    x: X.W_7_100,
+                    y: X.H_24_36,
+                    width: X.W_43_50,
+                    height: X.H_7_90,
+                    color: Color.white,
+                    dot: false,
+                    stripe: true,
+                    option: {
+                        img: images.img[arr[3]],
+                        random: true,
+                        score: 3,
+                        mark: 'C'
+                    }
+                }
+            ];
+        },
+
+        touchEvent: {
+
             handleTouch(event) {
                 event.preventDefault();
                 event.stopPropagation();
-                
-                this.dealTouch(event);
+
+                this.dealTouch(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
             },
-            
-            dealTouch(event) {
-                let p = this.getTouchendPosition(event);
+
+            dealTouch(x, y) {
+                let p = {x: x, y: y};
                 this.custom(p);
             },
-            
-            getTouchendPosition(event) {
 
-                let x = event.changedTouches[0].clientX;
-                let y = event.changedTouches[0].clientY;
-
-                return {x, y};
-            },
-            
             custom(p) {},
-            
-            unbind(object) {
+
+            unbind(object = Page.prototype) {
                 cav.removeEventListener('touchend', object.handler, false);
             }
+
         }
     };
 
@@ -344,10 +472,11 @@ function cover() {
 class Page {
 
     constructor(arr,gender = 0) {
-        this.arr = arr;
+        this.arr = T.getRandomOption(arr);
         this.gender = gender;
         this.option = null;
         this.context = ctx;
+        this.draw();
     }
 
     draw(point) {
@@ -377,15 +506,54 @@ class Page {
             if (args.dot) {
                 T.roundedRectDot(args.x, args.y, args.width, args.height, 5, Color.dot, 2, 6);
             }
+            
+            if (args.stripe) {
+                T.roundedRectStripe(args.x, args.y, args.width, args.height, 5);
+            }
 
             // 添加图片化文字
-            this.context.drawImage(args.txt, args.x, args.y, args.width, args.height);
+            this.context.drawImage(args.option.img, args.x, args.y, args.width, args.height);
         }
     }
     
     // 通过工具对象隔离事件的应用逻辑
     handler(event) {
-        T.ApplicationLogic.handleTouch(event);
+        T.touchEvent.handleTouch(event);
+    }
+    
+    dealTouch(object, rollback, callback, index) {
+
+        return function(p) {
+            object.draw(p);
+
+            switch (object.option) {
+                case -1:
+                    T.touchEvent.unbind();
+                    rollback();
+                    break;
+                case 1:
+                    T.touchEvent.unbind();
+                    result.options[index] = object.arr[1].option.mark;
+                    result.score[index] = object.arr[1].option.score;
+                    callback();
+                    break;
+                case 2:
+                    T.touchEvent.unbind();
+                    result.options[index] = object.arr[2].option.mark;
+                    result.score[index] = object.arr[2].option.score;
+                    callback();
+                    break;
+                case 3:
+                    T.touchEvent.unbind();
+                    result.options[index] = object.arr[3].option.mark;
+                    result.score[index] = object.arr[3].option.score;
+                    callback();
+                    break;
+                default:
+                    object.option = null;
+                    break;
+            }
+        }
     }
 }
 
@@ -400,80 +568,68 @@ function firstPage() {
             height: X.H_11_60,
             color: Color.op1,
             dot: true,
-            txt: images.img[4]
-        },
-        {
+            option: {
+                img: images.img[4],
+                random: false
+            }
+        }, {
             x: X.W_10,
             y: X.H_2,
             width: X.W_4_5,
             height: X.H_11_60,
             color: Color.op2,
             dot: true,
-            txt: images.img[5]
+            option: {
+                img: images.img[5],
+                random: false
+            }
         }]);
 
-    fir.draw();
+    // fir.draw();
     
     // 触摸事件针对不同页面的定制部分
-    T.ApplicationLogic.custom = function (p) {
+    T.touchEvent.custom = function (p) {
         fir.draw(p);
         
         switch (fir.option) {
             case 1:
+                this.unbind();
                 window.result.gender = 'female';
                 firstLadyPage();
                 break;
             case 0:
+                this.unbind();
                 window.result.gender = 'male';
                 firstManPage();
                 break;
             case -1:
+                this.unbind();
                 cover();
                 break;
             default:
                 fir.option = null;
         }
         
-        this.unbind(fir);
     };
 
-    cav.addEventListener('touchend', fir.handler, false);
+    cav.addEventListener('touchend', Page.prototype.handler, false);
 }
 
-// function firstManPage() {
-//
-//     function handler(event) {
-//         event.preventDefault();
-//         let p = getTouchendPosition(event);
-//         firMan.draw(p);
-//
-//         console.log(firMan.option);
-//         // switch (firMan.option) {
-//         //     case -1:
-//         //         firstPage();
-//         //         cav.removeEventListener('touchend', handler, false);
-//         //         break;
-//         //     case
-//         // }
-//     }
-//
-//     let firMan = new QueryPage([{x: X.W_7_100, y:X.H_7_36, width: X.W_43_50, height: X.H_6},
-//             {x: X.W_7_100, y:X.H_4_9, width: X.W_43_50, height: X.H_7_90},
-//             {x: X.W_7_100, y:X.H_5_9, width: X.W_43_50, height: X.H_7_90},
-//             {x: X.W_7_100, y:X.H_24_36, width: X.W_43_50, height: X.H_7_90}],
-//         ['#ffffff'], [images[6], images[7], images[8], images[9]], 1, 'dot', true, true);
-//
-//     firMan.draw();
-//
-//     cav.addEventListener('touchend', handler, false);
-// };
-//
-//
-//
-// function firstLadyPage() {
-//     reset();
-// }
+function firstLadyPage() {
+    let firLady = new Page(T.getStandardArr([6,7,8,9]));
+    
+    T.touchEvent.custom = firLady.dealTouch(firLady, firstPage, firstPage, 0);
 
+    cav.addEventListener('touchend', firLady.handler, false);
+}
+
+function firstManPage() {
+    let firMan = new Page(T.getStandardArr([6,7,8,9]),1);
+    
+    T.touchEvent.custom = firMan.dealTouch(firMan, firstPage, firstPage, 0);
+    
+    cav.addEventListener('touchend', firMan.handler, false);
+}
 
 // 页面初始化
 window.onload = function () {

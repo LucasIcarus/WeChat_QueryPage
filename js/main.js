@@ -48,6 +48,8 @@ var Color = {
     op1: '#7493C9',
     op2: '#F376A2',
     dot: '#E0F8A9',
+    white: '#ffffff',
+    stripe: '#fff79a',
     rect: ''
 };
 
@@ -55,7 +57,11 @@ var images = {
     init: [],
     img: []
 },
-    result = {},
+    result = {
+    gender: '',
+    options: [],
+    score: []
+},
     load = 0,
     ctx = cav.getContext('2d');
 
@@ -68,6 +74,9 @@ window.requestAnimFrame = function () {
 // 工具函数集合
 (function () {
     var T = {
+        randomSort: function randomSort(a, b) {
+            return Math.random() - 0.5;
+        },
         drawRoundedRect: function drawRoundedRect(x, y, width, height, radius, context) {
             context.beginPath();
 
@@ -94,9 +103,11 @@ window.requestAnimFrame = function () {
             var radius = arguments.length <= 5 || arguments[5] === undefined ? 5 : arguments[5];
             var context = arguments.length <= 6 || arguments[6] === undefined ? ctx : arguments[6];
 
+            context.save();
             context.fillStyle = style;
             this.drawRoundedRect(x, y, width, height, radius, context);
             context.fill();
+            context.restore();
         },
         roundedRectDot: function roundedRectDot(x, y, width, height, rounded, color, radius, interval) {
             var context = arguments.length <= 8 || arguments[8] === undefined ? ctx : arguments[8];
@@ -131,6 +142,44 @@ window.requestAnimFrame = function () {
             context.fill();
             context.restore();
         },
+        roundedRectStripe: function roundedRectStripe(x, y, width, height, rounded) {
+            var color = arguments.length <= 5 || arguments[5] === undefined ? Color.stripe : arguments[5];
+            var thick = arguments.length <= 6 || arguments[6] === undefined ? 5 : arguments[6];
+            var context = arguments.length <= 7 || arguments[7] === undefined ? ctx : arguments[7];
+
+            if (9 * height > hei) {
+
+                // 大框条纹长度
+                var l = Math.floor((height - 2 * rounded) / 8.5),
+
+
+                // 纵向间隔
+                m = (height - rounded * 2 - l * 6) / 5;
+            } else {
+
+                // 小框条纹长度
+                var l = Math.floor((height - 2 * rounded) / 4),
+                    m = (height - rounded * 2 - l * 3) / 2;
+            }
+
+            // 横向前置余量
+            var n = (width - rounded * 2) % (l * 1.5) / 2;
+
+            context.save();
+            context.fillStyle = color;
+
+            for (var i = y + rounded; i < y + height - rounded; i += m + l) {
+                context.fillRect(x + 1, i, thick, l);
+                context.fillRect(x + width - thick - 1, i, thick, l);
+            }
+
+            for (var _i4 = x + rounded + n; _i4 < x + width - rounded - n; _i4 += 1.5 * l) {
+                context.fillRect(_i4, y + 1, l, thick);
+                context.fillRect(_i4, y + height - thick - 1, l, thick);
+            }
+
+            context.restore();
+        },
         rollback: function rollback(style) {
             var context = arguments.length <= 1 || arguments[1] === undefined ? ctx : arguments[1];
 
@@ -138,7 +187,7 @@ window.requestAnimFrame = function () {
             context.save();
             context.fillStyle = style;
             context.strokeStyle = style;
-            context.lineWidth = 4;
+            context.lineWidth = 5;
             context.beginPath();
 
             context.moveTo(1.4 * r - 1, 2 * r + 1);
@@ -167,32 +216,160 @@ window.requestAnimFrame = function () {
             var height = _ref$height === undefined ? hei : _ref$height;
             var _ref$img = _ref.img;
             var img = _ref$img === undefined ? images.init[0] : _ref$img;
+            var context = arguments.length <= 1 || arguments[1] === undefined ? ctx : arguments[1];
 
-            ctx.fillStyle = ctx.createPattern(img, 'repeat');
-            ctx.fillRect(x, y, width, height);
+            context.save();
+            context.fillStyle = ctx.createPattern(img, 'repeat');
+            context.fillRect(x, y, width, height);
+            context.restore();
+        },
+        getRandomOption: function getRandomOption() {
+            var arr = arguments.length <= 0 || arguments[0] === undefined ? [{}] : arguments[0];
+
+            var r = [],
+                n = 0;
+
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+                for (var _iterator = arr.entries()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var _step$value = _slicedToArray(_step.value, 2);
+
+                    var index = _step$value[0];
+                    var args = _step$value[1];
+
+                    if (args.option.random) {
+                        r.push(arr[index].option);
+                    }
+                }
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
+            }
+
+            if (r.length) {
+                r = r.sort(this.randomSort);
+            }
+
+            var _iteratorNormalCompletion2 = true;
+            var _didIteratorError2 = false;
+            var _iteratorError2 = undefined;
+
+            try {
+                for (var _iterator2 = arr.entries()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                    var _step2$value = _slicedToArray(_step2.value, 2);
+
+                    var index = _step2$value[0];
+                    var args = _step2$value[1];
+
+                    if (args.option.random) {
+                        arr[index].option = r[n];
+                        n++;
+                    }
+                }
+            } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                        _iterator2.return();
+                    }
+                } finally {
+                    if (_didIteratorError2) {
+                        throw _iteratorError2;
+                    }
+                }
+            }
+
+            return arr;
+        },
+        getStandardArr: function getStandardArr(arr) {
+            return [{
+                x: X.W_7_100,
+                y: X.H_7_36,
+                width: X.W_43_50,
+                height: X.H_6,
+                color: Color.white,
+                dot: false,
+                stripe: true,
+                option: {
+                    img: images.img[arr[0]],
+                    random: false
+                }
+            }, {
+                x: X.W_7_100,
+                y: X.H_4_9,
+                width: X.W_43_50,
+                height: X.H_7_90,
+                color: Color.white,
+                dot: false,
+                stripe: true,
+                option: {
+                    img: images.img[arr[1]],
+                    random: true,
+                    score: 1,
+                    mark: 'A'
+                }
+            }, {
+                x: X.W_7_100,
+                y: X.H_5_9,
+                width: X.W_43_50,
+                height: X.H_7_90,
+                color: Color.white,
+                dot: false,
+                stripe: true,
+                option: {
+                    img: images.img[arr[2]],
+                    random: true,
+                    score: 2,
+                    mark: 'B'
+                }
+            }, {
+                x: X.W_7_100,
+                y: X.H_24_36,
+                width: X.W_43_50,
+                height: X.H_7_90,
+                color: Color.white,
+                dot: false,
+                stripe: true,
+                option: {
+                    img: images.img[arr[3]],
+                    random: true,
+                    score: 3,
+                    mark: 'C'
+                }
+            }];
         },
 
 
-        ApplicationLogic: {
+        touchEvent: {
             handleTouch: function handleTouch(event) {
                 event.preventDefault();
                 event.stopPropagation();
 
-                this.dealTouch(event);
+                this.dealTouch(event.changedTouches[0].clientX, event.changedTouches[0].clientY);
             },
-            dealTouch: function dealTouch(event) {
-                var p = this.getTouchendPosition(event);
+            dealTouch: function dealTouch(x, y) {
+                var p = { x: x, y: y };
                 this.custom(p);
             },
-            getTouchendPosition: function getTouchendPosition(event) {
-
-                var x = event.changedTouches[0].clientX;
-                var y = event.changedTouches[0].clientY;
-
-                return { x: x, y: y };
-            },
             custom: function custom(p) {},
-            unbind: function unbind(object) {
+            unbind: function unbind() {
+                var object = arguments.length <= 0 || arguments[0] === undefined ? Page.prototype : arguments[0];
+
                 cav.removeEventListener('touchend', object.handler, false);
             }
         }
@@ -205,16 +382,16 @@ window.requestAnimFrame = function () {
 function init(source, callback) {
     var n = 3;
 
-    var _iteratorNormalCompletion = true;
-    var _didIteratorError = false;
-    var _iteratorError = undefined;
+    var _iteratorNormalCompletion3 = true;
+    var _didIteratorError3 = false;
+    var _iteratorError3 = undefined;
 
     try {
-        for (var _iterator = source.entries()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var _step$value = _slicedToArray(_step.value, 2);
+        for (var _iterator3 = source.entries()[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+            var _step3$value = _slicedToArray(_step3.value, 2);
 
-            var index = _step$value[0];
-            var url = _step$value[1];
+            var index = _step3$value[0];
+            var url = _step3$value[1];
 
             images.init[index] = new Image();
             images.init[index].src = url;
@@ -232,16 +409,16 @@ function init(source, callback) {
             };
         }
     } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
+        _didIteratorError3 = true;
+        _iteratorError3 = err;
     } finally {
         try {
-            if (!_iteratorNormalCompletion && _iterator.return) {
-                _iterator.return();
+            if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                _iterator3.return();
             }
         } finally {
-            if (_didIteratorError) {
-                throw _iteratorError;
+            if (_didIteratorError3) {
+                throw _iteratorError3;
             }
         }
     }
@@ -254,16 +431,16 @@ function loadImages(source) {
     var loaded = 0,
         num = source.length;
 
-    var _iteratorNormalCompletion2 = true;
-    var _didIteratorError2 = false;
-    var _iteratorError2 = undefined;
+    var _iteratorNormalCompletion4 = true;
+    var _didIteratorError4 = false;
+    var _iteratorError4 = undefined;
 
     try {
-        for (var _iterator2 = source.entries()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-            var _step2$value = _slicedToArray(_step2.value, 2);
+        for (var _iterator4 = source.entries()[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+            var _step4$value = _slicedToArray(_step4.value, 2);
 
-            var index = _step2$value[0];
-            var url = _step2$value[1];
+            var index = _step4$value[0];
+            var url = _step4$value[1];
 
             images.img[index] = new Image();
             images.img[index].src = url;
@@ -275,16 +452,16 @@ function loadImages(source) {
 
         // 初始化loading条动画效果
     } catch (err) {
-        _didIteratorError2 = true;
-        _iteratorError2 = err;
+        _didIteratorError4 = true;
+        _iteratorError4 = err;
     } finally {
         try {
-            if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                _iterator2.return();
+            if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                _iterator4.return();
             }
         } finally {
-            if (_didIteratorError2) {
-                throw _iteratorError2;
+            if (_didIteratorError4) {
+                throw _iteratorError4;
             }
         }
     }
@@ -409,10 +586,11 @@ var Page = function () {
 
         _classCallCheck(this, Page);
 
-        this.arr = arr;
+        this.arr = T.getRandomOption(arr);
         this.gender = gender;
         this.option = null;
         this.context = ctx;
+        this.draw();
     }
 
     _createClass(Page, [{
@@ -433,16 +611,16 @@ var Page = function () {
                 }
             }
 
-            var _iteratorNormalCompletion3 = true;
-            var _didIteratorError3 = false;
-            var _iteratorError3 = undefined;
+            var _iteratorNormalCompletion5 = true;
+            var _didIteratorError5 = false;
+            var _iteratorError5 = undefined;
 
             try {
-                for (var _iterator3 = this.arr.entries()[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                    var _step3$value = _slicedToArray(_step3.value, 2);
+                for (var _iterator5 = this.arr.entries()[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+                    var _step5$value = _slicedToArray(_step5.value, 2);
 
-                    var index = _step3$value[0];
-                    var args = _step3$value[1];
+                    var index = _step5$value[0];
+                    var args = _step5$value[1];
 
 
                     T.fillRoundedRect(args.x, args.y, args.width, args.height, args.color);
@@ -455,20 +633,24 @@ var Page = function () {
                         T.roundedRectDot(args.x, args.y, args.width, args.height, 5, Color.dot, 2, 6);
                     }
 
+                    if (args.stripe) {
+                        T.roundedRectStripe(args.x, args.y, args.width, args.height, 5);
+                    }
+
                     // 添加图片化文字
-                    this.context.drawImage(args.txt, args.x, args.y, args.width, args.height);
+                    this.context.drawImage(args.option.img, args.x, args.y, args.width, args.height);
                 }
             } catch (err) {
-                _didIteratorError3 = true;
-                _iteratorError3 = err;
+                _didIteratorError5 = true;
+                _iteratorError5 = err;
             } finally {
                 try {
-                    if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                        _iterator3.return();
+                    if (!_iteratorNormalCompletion5 && _iterator5.return) {
+                        _iterator5.return();
                     }
                 } finally {
-                    if (_didIteratorError3) {
-                        throw _iteratorError3;
+                    if (_didIteratorError5) {
+                        throw _iteratorError5;
                     }
                 }
             }
@@ -479,7 +661,43 @@ var Page = function () {
     }, {
         key: 'handler',
         value: function handler(event) {
-            T.ApplicationLogic.handleTouch(event);
+            T.touchEvent.handleTouch(event);
+        }
+    }, {
+        key: 'dealTouch',
+        value: function dealTouch(object, rollback, callback, index) {
+
+            return function (p) {
+                object.draw(p);
+
+                switch (object.option) {
+                    case -1:
+                        T.touchEvent.unbind();
+                        rollback();
+                        break;
+                    case 1:
+                        T.touchEvent.unbind();
+                        result.options[index] = object.arr[1].option.mark;
+                        result.score[index] = object.arr[1].option.score;
+                        callback();
+                        break;
+                    case 2:
+                        T.touchEvent.unbind();
+                        result.options[index] = object.arr[2].option.mark;
+                        result.score[index] = object.arr[2].option.score;
+                        callback();
+                        break;
+                    case 3:
+                        T.touchEvent.unbind();
+                        result.options[index] = object.arr[3].option.mark;
+                        result.score[index] = object.arr[3].option.score;
+                        callback();
+                        break;
+                    default:
+                        object.option = null;
+                        break;
+                }
+            };
         }
     }]);
 
@@ -498,7 +716,10 @@ function firstPage() {
         height: X.H_11_60,
         color: Color.op1,
         dot: true,
-        txt: images.img[4]
+        option: {
+            img: images.img[4],
+            random: false
+        }
     }, {
         x: X.W_10,
         y: X.H_2,
@@ -506,70 +727,56 @@ function firstPage() {
         height: X.H_11_60,
         color: Color.op2,
         dot: true,
-        txt: images.img[5]
+        option: {
+            img: images.img[5],
+            random: false
+        }
     }]);
 
-    fir.draw();
+    // fir.draw();
 
     // 触摸事件针对不同页面的定制部分
-    T.ApplicationLogic.custom = function (p) {
+    T.touchEvent.custom = function (p) {
         fir.draw(p);
 
         switch (fir.option) {
             case 1:
+                this.unbind();
                 window.result.gender = 'female';
                 firstLadyPage();
                 break;
             case 0:
+                this.unbind();
                 window.result.gender = 'male';
                 firstManPage();
                 break;
             case -1:
+                this.unbind();
                 cover();
                 break;
             default:
                 fir.option = null;
         }
-
-        this.unbind(fir);
     };
 
-    cav.addEventListener('touchend', fir.handler, false);
+    cav.addEventListener('touchend', Page.prototype.handler, false);
 }
 
-// function firstManPage() {
-//
-//     function handler(event) {
-//         event.preventDefault();
-//         let p = getTouchendPosition(event);
-//         firMan.draw(p);
-//
-//         console.log(firMan.option);
-//         // switch (firMan.option) {
-//         //     case -1:
-//         //         firstPage();
-//         //         cav.removeEventListener('touchend', handler, false);
-//         //         break;
-//         //     case
-//         // }
-//     }
-//
-//     let firMan = new QueryPage([{x: X.W_7_100, y:X.H_7_36, width: X.W_43_50, height: X.H_6},
-//             {x: X.W_7_100, y:X.H_4_9, width: X.W_43_50, height: X.H_7_90},
-//             {x: X.W_7_100, y:X.H_5_9, width: X.W_43_50, height: X.H_7_90},
-//             {x: X.W_7_100, y:X.H_24_36, width: X.W_43_50, height: X.H_7_90}],
-//         ['#ffffff'], [images[6], images[7], images[8], images[9]], 1, 'dot', true, true);
-//
-//     firMan.draw();
-//
-//     cav.addEventListener('touchend', handler, false);
-// };
-//
-//
-//
-// function firstLadyPage() {
-//     reset();
-// }
+function firstLadyPage() {
+    var firLady = new Page(T.getStandardArr([6, 7, 8, 9]));
+
+    T.touchEvent.custom = firLady.dealTouch(firLady, firstPage, firstPage, 0);
+
+    cav.addEventListener('touchend', firLady.handler, false);
+}
+
+function firstManPage() {
+    var firMan = new Page(T.getStandardArr([6, 7, 8, 9]), 1);
+
+    T.touchEvent.custom = firMan.dealTouch(firMan, firstPage, firstPage, 0);
+
+    cav.addEventListener('touchend', firMan.handler, false);
+}
 
 // 页面初始化
 window.onload = function () {
