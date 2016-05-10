@@ -48,12 +48,17 @@ const Color = {
 
 let images = {
     init: [],
-    img: []
+    img: [],
+    maleOp: [],
+    femaleOp: [],
+    maleResult: [],
+    femaleResult: []
     },
     result = {
         gender: '',
         options: [],
-        score: []
+        score: [],
+        loadState: [0, 0]
     },
     load = 0,
     ctx = cav.getContext('2d');
@@ -228,7 +233,7 @@ window.requestAnimFrame = (function () {
             return arr;
         },
 
-        getStandardArr(arr) {
+        getStandardArr(img, oddEven) {
             return [
                 {
                     x: X.W_7_100,
@@ -239,8 +244,11 @@ window.requestAnimFrame = (function () {
                     dot: false,
                     stripe: true,
                     option: {
-                        img: images.img[arr[0]],
-                        random: false
+                        img: img,
+                        random: false,
+                        concat: true,
+                        y: 0 + oddEven * 300,
+                        height: 129
                     }
                 },{
                     x: X.W_7_100,
@@ -251,10 +259,13 @@ window.requestAnimFrame = (function () {
                     dot: false,
                     stripe: true,
                     option: {
-                        img: images.img[arr[1]],
+                        img: img,
                         random: true,
                         score: 1,
-                        mark: 'A'
+                        mark: 'A',
+                        concat: true,
+                        y: 129 + oddEven * 300,
+                        height: 57
                     }
                 },{
                     x: X.W_7_100,
@@ -265,10 +276,13 @@ window.requestAnimFrame = (function () {
                     dot: false,
                     stripe: true,
                     option: {
-                        img: images.img[arr[2]],
+                        img: img,
                         random: true,
                         score: 2,
-                        mark: 'B'
+                        mark: 'B',
+                        concat: true,
+                        y: 186 + oddEven * 300,
+                        height: 57
                     }
                 },{
                     x: X.W_7_100,
@@ -279,10 +293,13 @@ window.requestAnimFrame = (function () {
                     dot: false,
                     stripe: true,
                     option: {
-                        img: images.img[arr[3]],
+                        img: img,
                         random: true,
                         score: 3,
-                        mark: 'C'
+                        mark: 'C',
+                        concat: true,
+                        y: 243 + oddEven * 300,
+                        height: 57
                     }
                 }
             ];
@@ -308,6 +325,21 @@ window.requestAnimFrame = (function () {
                 cav.removeEventListener('touchend', object.handler, false);
             }
 
+        },
+
+        lazyLoad(img, arr, gender, state) {
+            let o = img.length,
+                loaded = 0;
+            for (let [index, string] of arr.entries()) {
+                img[o + index] = new Image();
+                img[o + index].src = string;
+                img[o + index].onload = function() {
+                    loaded++;
+                    if(loaded >= arr.length) {
+                        result.loadState[gender] = state;
+                    }
+                };
+            }
         }
     };
 
@@ -512,7 +544,12 @@ class Page {
             }
 
             // 添加图片化文字
-            this.context.drawImage(args.option.img, args.x, args.y, args.width, args.height);
+            if (args.option.concat) {
+                this.context.drawImage(args.option.img, 0, args.option.y, 400, args.option.height, args.x, args.y, args.width,
+                    args.height);
+            } else {
+                this.context.drawImage(args.option.img, args.x, args.y, args.width, args.height);
+            }
         }
     }
     
@@ -521,7 +558,7 @@ class Page {
         T.touchEvent.handleTouch(event);
     }
     
-    dealTouch(object, rollback, callback, index) {
+    dealTouch(object, rollback, callback, index, gender) {
 
         return function(p) {
             object.draw(p);
@@ -529,25 +566,25 @@ class Page {
             switch (object.option) {
                 case -1:
                     T.touchEvent.unbind();
-                    rollback();
+                    rollback(gender);
                     break;
                 case 1:
                     T.touchEvent.unbind();
                     result.options[index] = object.arr[1].option.mark;
                     result.score[index] = object.arr[1].option.score;
-                    callback();
+                    callback(gender);
                     break;
                 case 2:
                     T.touchEvent.unbind();
                     result.options[index] = object.arr[2].option.mark;
                     result.score[index] = object.arr[2].option.score;
-                    callback();
+                    callback(gender);
                     break;
                 case 3:
                     T.touchEvent.unbind();
                     result.options[index] = object.arr[3].option.mark;
                     result.score[index] = object.arr[3].option.score;
-                    callback();
+                    callback(gender);
                     break;
                 default:
                     object.option = null;
@@ -560,7 +597,11 @@ class Page {
 // 页面函数
 function firstPage() {
 
-    let fir = new Page([
+    result.gender = 'unknown';
+    result.score = [];
+    result.options = [];
+    
+    let fp = new Page([
         {
             x: X.W_10,
             y: X.H_5_18,
@@ -570,7 +611,8 @@ function firstPage() {
             dot: true,
             option: {
                 img: images.img[4],
-                random: false
+                random: false,
+                concat: false
             }
         }, {
             x: X.W_10,
@@ -581,33 +623,32 @@ function firstPage() {
             dot: true,
             option: {
                 img: images.img[5],
-                random: false
+                random: false,
+                concat: false
             }
-        }]);
-
-    // fir.draw();
+        }], 0);
     
     // 触摸事件针对不同页面的定制部分
     T.touchEvent.custom = function (p) {
-        fir.draw(p);
+        fp.draw(p);
         
-        switch (fir.option) {
+        switch (fp.option) {
             case 1:
                 this.unbind();
                 window.result.gender = 'female';
-                firstLadyPage();
+                firstQueryPage(0);
                 break;
             case 0:
                 this.unbind();
                 window.result.gender = 'male';
-                firstManPage();
+                firstQueryPage(1);
                 break;
             case -1:
                 this.unbind();
                 cover();
                 break;
             default:
-                fir.option = null;
+                fp.option = null;
         }
         
     };
@@ -615,28 +656,330 @@ function firstPage() {
     cav.addEventListener('touchend', Page.prototype.handler, false);
 }
 
-function firstLadyPage() {
-    let firLady = new Page(T.getStandardArr([6,7,8,9]));
-    
-    T.touchEvent.custom = firLady.dealTouch(firLady, firstPage, firstPage, 0);
+function firstQueryPage(gender) {
 
-    cav.addEventListener('touchend', firLady.handler, false);
+    let fir = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 0) {
+            T.lazyLoad(images.femaleOp, ['./img/m-2.png', './img/m-3.png'], gender, 1);
+        }
+
+        fir = new Page(T.getStandardArr(images.img[6], 0), gender);
+    } else {
+
+        if (result.loadState[gender] === 0) {
+            T.lazyLoad(images.maleOp, ['./img/n-2.png', './img/n-3.png'], gender, 1);
+        }
+
+        fir = new Page(T.getStandardArr(images.img[7], 0), gender);
+    }
+
+    T.touchEvent.custom = fir.dealTouch(fir, firstPage, secondQueryPage, 0, gender);
+
+    cav.addEventListener('touchend', fir.handler, false);
 }
 
-function firstManPage() {
-    let firMan = new Page(T.getStandardArr([6,7,8,9]),1);
+function secondQueryPage(gender) {
+    let sec = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 1) {
+            T.lazyLoad(images.femaleOp, ['./img/m-4.png','./img/m-5.png','./img/m-6.png'], gender, 2);
+        }
+
+        sec = new Page(T.getStandardArr(images.img[6], 1), gender);
+    } else {
+
+        if (result.loadState[gender] === 1) {
+            T.lazyLoad(images.maleOp, ['./img/n-4.png','./img/n-5.png','./img/n-6.png'], gender, 2);
+        }
+
+        sec = new Page(T.getStandardArr(images.img[7], 1), gender);
+    }
     
-    T.touchEvent.custom = firMan.dealTouch(firMan, firstPage, firstPage, 0);
+    T.touchEvent.custom = sec.dealTouch(sec, firstQueryPage, thirdQueryPage, 1, gender);
     
-    cav.addEventListener('touchend', firMan.handler, false);
+    cav.addEventListener('touchend', sec.handler, false);
+}
+
+function thirdQueryPage(gender) {
+
+    if (result.loadState[gender] === 0) {
+        seventhQueryPage(gender);
+        return;
+    }
+
+    let thi = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 1) {
+            T.lazyLoad(images.femaleOp, ['./img/m-4.png','./img/m-5.png','./img/m-6.png'], gender, 2);
+        }
+
+        thi = new Page(T.getStandardArr(images.femaleOp[0], 0), gender);
+    } else {
+
+        if (result.loadState[gender] === 1) {
+            T.lazyLoad(images.maleOp, ['./img/n-4.png','./img/n-5.png','./img/n-6.png'], gender, 2);
+        }
+
+        thi = new Page(T.getStandardArr(images.maleOp[0], 0), gender);
+    }
+    
+    T.touchEvent.custom = thi.dealTouch(thi, secondQueryPage, fourthQueryPage, 2, gender);
+
+    cav.addEventListener('touchend', thi.handler, false);
+}
+
+function fourthQueryPage(gender) {
+
+    let fou = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 1) {
+            T.lazyLoad(images.femaleOp, ['./img/m-4.png','./img/m-5.png','./img/m-6.png'], gender, 2);
+        }
+
+        fou = new Page(T.getStandardArr(images.femaleOp[0], 1), gender);
+    } else {
+
+        if (result.loadState[gender] === 1) {
+            T.lazyLoad(images.maleOp, ['./img/n-4.png','./img/n-5.png','./img/n-6.png'], gender, 2);
+        }
+
+        fou = new Page(T.getStandardArr(images.maleOp[0], 1), gender);
+    }
+    
+    T.touchEvent.custom = fou.dealTouch(fou, thirdQueryPage, fifthQueryPage, 3, gender);
+
+    cav.addEventListener('touchend', fou.handler, false);
+}
+
+function fifthQueryPage(gender) {
+
+    let fif = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 1) {
+            T.lazyLoad(images.femaleOp, ['./img/m-4.png','./img/m-5.png','./img/m-6.png'], gender, 2);
+        }
+
+        fif = new Page(T.getStandardArr(images.femaleOp[1], 0), gender);
+    } else {
+
+        if (result.loadState[gender] === 1) {
+            T.lazyLoad(images.maleOp, ['./img/n-4.png','./img/n-5.png','./img/n-6.png'], gender, 2);
+        }
+
+        fif = new Page(T.getStandardArr(images.maleOp[1], 0), gender);
+    }
+    
+    T.touchEvent.custom = fif.dealTouch(fif, fourthQueryPage, sixthQueryPage, 4, gender);
+
+    cav.addEventListener('touchend', fif.handler, false);
+}
+
+function sixthQueryPage(gender) {
+
+    let six = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 1) {
+            T.lazyLoad(images.femaleOp, ['./img/m-4.png','./img/m-5.png','./img/m-6.png'], gender, 2);
+        }
+
+        six = new Page(T.getStandardArr(images.femaleOp[1], 1), gender);
+    } else {
+
+        if (result.loadState[gender] === 1) {
+            T.lazyLoad(images.maleOp, ['./img/n-4.png','./img/n-5.png','./img/n-6.png'], gender, 2);
+        }
+
+        six = new Page(T.getStandardArr(images.maleOp[1], 1), gender);
+    }
+
+    T.touchEvent.custom = six.dealTouch(six, fifthQueryPage, seventhQueryPage, 5, gender);
+
+    cav.addEventListener('touchend', six.handler, false);
+}
+
+function seventhQueryPage(gender) {
+
+    if (result.loadState[gender] === 1) {
+        sixthQueryPage(gender);
+        return;
+    }
+
+    let sev = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.femaleResult, ['./img/m-7.png', './img/m-8.png', './img/m-9.png'], gender, 3);
+        }
+
+        sev = new Page(T.getStandardArr(images.femaleOp[2], 0), gender);
+    } else {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.maleResult, ['./img/n-7.png', './img/n-8.png', './img/n-9.png'], gender, 3);
+        }
+        sev = new Page(T.getStandardArr(images.maleOp[2], 0), gender);
+    }
+
+
+    T.touchEvent.custom = sev.dealTouch(sev, sixthQueryPage, eighthQueryPage, 6, gender);
+
+    cav.addEventListener('touchend', sev.handler, false);
+}
+
+function eighthQueryPage(gender) {
+
+    let eig = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.femaleResult, ['./img/m-7.png', './img/m-8.png', './img/m-9.png'], gender, 3);
+        }
+
+        eig = new Page(T.getStandardArr(images.femaleOp[2], 1), gender);
+    } else {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.maleResult, ['./img/n-7.png', './img/n-8.png', './img/n-9.png'], gender, 3);
+        }
+        eig = new Page(T.getStandardArr(images.maleOp[2], 1), gender);
+    }
+
+    T.touchEvent.custom = eig.dealTouch(eig, seventhQueryPage, ninthQueryPage, 7, gender);
+
+    cav.addEventListener('touchend', eig.handler, false);
+}
+
+function ninthQueryPage(gender) {
+
+    let nin = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.femaleResult, ['./img/m-7.png', './img/m-8.png', './img/m-9.png'], gender, 3);
+        }
+
+        nin = new Page(T.getStandardArr(images.femaleOp[3], 0), gender);
+    } else {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.maleResult, ['./img/n-7.png', './img/n-8.png', './img/n-9.png'], gender, 3);
+        }
+        nin = new Page(T.getStandardArr(images.maleOp[3], 0), gender);
+    }
+
+    T.touchEvent.custom = nin.dealTouch(nin, eighthQueryPage, tenthQueryPage, 8, gender);
+
+    cav.addEventListener('touchend', nin.handler, false);
+}
+
+function tenthQueryPage(gender) {
+
+    let ten = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.femaleResult, ['./img/m-7.png', './img/m-8.png', './img/m-9.png'], gender, 3);
+        }
+
+        ten = new Page(T.getStandardArr(images.femaleOp[3], 1), gender);
+    } else {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.maleResult, ['./img/n-7.png', './img/n-8.png', './img/n-9.png'], gender, 3);
+        }
+        ten = new Page(T.getStandardArr(images.maleOp[3], 1), gender);
+    }
+
+    T.touchEvent.custom = ten.dealTouch(ten, ninthQueryPage, eleventhQueryPage, 9, gender);
+
+    cav.addEventListener('touchend', ten.handler, false);
+}
+
+function eleventhQueryPage(gender) {
+
+    let ele = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.femaleResult, ['./img/m-7.png', './img/m-8.png', './img/m-9.png'], gender, 3);
+        }
+
+        ele = new Page(T.getStandardArr(images.femaleOp[4], 0), gender);
+    } else {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.maleResult, ['./img/n-7.png', './img/n-8.png', './img/n-9.png'], gender, 3);
+        }
+        ele = new Page(T.getStandardArr(images.maleOp[4], 0), gender);
+    }
+
+    T.touchEvent.custom = ele.dealTouch(ele, tenthQueryPage, lastQueryPage, 10, gender);
+
+    cav.addEventListener('touchend', ele.handler, false);
+}
+
+function lastQueryPage(gender) {
+
+    let last = null;
+
+    if (!gender) {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.femaleResult, ['./img/m-7.png', './img/m-8.png', './img/m-9.png'], gender, 3);
+        }
+
+        last = new Page(T.getStandardArr(images.femaleOp[4], 1), gender);
+    } else {
+
+        if (result.loadState[gender] === 2) {
+            T.lazyLoad(images.maleResult, ['./img/n-7.png', './img/n-8.png', './img/n-9.png'], gender, 3);
+        }
+        last = new Page(T.getStandardArr(images.maleOp[4], 1), gender);
+    }
+
+    T.touchEvent.custom = last.dealTouch(last, eleventhQueryPage, resultPage, 11, gender);
+
+    cav.addEventListener('touchend', last.handler, false);
+}
+
+function resultPage(gender) {
+
+    let n = Math.floor(Math.random() * 3);
+    
+    if (gender) {
+        T.reset({img: images.img[0]});
+        ctx.drawImage(images.maleResult[n], 0, 0, wid, hei);
+    } else {
+        T.reset();
+        ctx.drawImage(images.femaleResult[n], 0, 0, wid, hei);
+    }
 }
 
 // 页面初始化
 window.onload = function () {
 
-    let source = ['./img/bg_1.png', './img/heart.png', './img/main-title.png', './img/oba.png',
-         './img/op1.png','./img/op2.png', './img/m_1_1.png', './img/m_1_2.png', './img/m_1_3.png',
-        './img/m_1_4.png',];
+    let source = [
+        './img/bg_1.png', './img/heart.png', './img/main-title.png', './img/oba.png', './img/op1.png','./img/op2.png',
+        './img/m-1.png', './img/n-1.png',
+    ];
     init(['./img/bg.jpg', './img/0.png', './img/100.png'], function () {
         loadImages(source);
     });

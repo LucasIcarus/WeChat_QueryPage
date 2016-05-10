@@ -20,5 +20,13 @@
   },
   "scripts": {
     "babel": "babel ./js/main.es6 -o ./js/main.js"
+  },
+  "devDependencies": {
+    "jasmine-core": "^2.4.1",
+    "karma": "^0.13.22",
+    "karma-chrome-launcher": "^0.2.3",
+    "karma-jasmine": "^0.3.8",
+    "karma-webpack": "^1.7.0",
+    "webpack": "^1.13.0"
   }
 }
